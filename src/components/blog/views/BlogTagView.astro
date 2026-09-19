@@ -43,7 +43,7 @@ const countKey = posts.length === 1 ? 'blog.tagCountOne' : 'blog.tagCountOther';
   image={getBlogTagOgPath(tagToSlug(tag))}
   eagerReveal
 >
-  <Hero layout="centered" size="sm">
+  <Hero layout="centered" size="sm" class="isolate" showHeroHalo>
     <Badge slot="badge" variant="brand" pill>
       <Icon name="tag" size="sm" />
       {t('blog.tagBadge', locale)}
