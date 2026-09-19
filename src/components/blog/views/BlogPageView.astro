@@ -55,7 +55,7 @@ const topTags = collectTopTags(posts, BLOG_TAG_CLOUD_LIMIT);
   eagerReveal
   footerBackground="secondary"
 >
-  <Hero layout="centered" size="sm">
+  <Hero layout="centered" size="sm" class="isolate" showHeroHalo>
     <Badge slot="badge" variant="brand" pill>
       <Icon name="book" size="sm" />
       {t('blog.pageBadge', locale, { page, total: totalPages })}
