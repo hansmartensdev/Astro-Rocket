@@ -1325,6 +1325,62 @@
   border-color: transparent !important;
 }
 
+/* Controls standing on a hero that draws a grid.
+
+   A hero with `showHeroHalo` paints a 56px lattice behind its content —
+   `HeroGrid` in light mode, `hero-beam__grid` in dark. Any control filled with
+   `bg-transparent` lets a 1px line read straight through it, which cuts the
+   control in half.
+
+   Every affected hero paints `bg-background`, so filling with that token gives
+   the colour the transparent control already shows and leaves nothing to see
+   through. On plain ground nothing about the control changes.
+
+   Applied at the call site rather than in the variant or the component. Both
+   the outline variants and the tag lists are used away from a hero as well,
+   and several of those sit on `bg-background-secondary` — a different colour,
+   which this fill would turn into a pale patch.
+
+   Two button classes because the two outline variants hover differently:
+   `outline` hovers to `--secondary`, which is opaque already and is restated
+   here so the base fill cannot win the cascade against it, while
+   `brand-outline` hovers to `bg-brand-500/10`, which is translucent and would
+   let the line straight back in. Mixing that same 10% into the same ground
+   gives the hover its colour with nothing left to see through.
+
+   `!important`, matching `.cta-btn-brand` above, because the utility being
+   overridden comes from the same variant and carries the same weight. It is on
+   the hover rules too, so the hover still wins over the base fill.
+
+   In sRGB rather than OKLCH: `--color-background` is `oklch(100% 0 0)` in light
+   mode, whose hue is powerless, so mixing toward it in OKLCH drags the hue off
+   the brand. sRGB is also what the browser composites a translucent fill in, so
+   this lands where the hover sits today. */
+.hero-btn-opaque {
+  background-color: var(--color-background) !important;
+}
+.hero-btn-opaque:hover {
+  background-color: var(--color-secondary) !important;
+}
+.hero-btn-opaque-brand {
+  background-color: var(--color-background) !important;
+}
+.hero-btn-opaque-brand:hover {
+  background-color: color-mix(in srgb, var(--color-brand-500) 10%, var(--color-background)) !important;
+}
+
+/* The same fix for the tag pills a hero carries.
+
+   Only the unselected pill: the selected one fills with `bg-brand-500` and
+   carries `aria-current="page"`. Neither hero passes an active tag today, but
+   the exclusion keeps the rule honest if one ever does.
+
+   No hover rule — these pills change only their border on hover, so there is
+   no second translucent state to close. */
+.tag-pills-opaque a:not([aria-current]) {
+  background-color: var(--color-background);
+}
+
 /* Primary button inside an inverted section.
    The primary variant is `bg-foreground text-background`, but the Button's own
    light-mode style wins the cascade for background-color and fills with

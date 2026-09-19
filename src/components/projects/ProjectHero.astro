@@ -69,7 +69,7 @@ const locale = getLocaleFromPath(Astro.url.pathname);
         </p>
 
         {tags.length > 0 && (
-          <ProjectTagList tags={tags} locale={locale} class="mb-[var(--space-stack-lg)]" />
+          <ProjectTagList tags={tags} locale={locale} class="mb-[var(--space-stack-lg)] tag-pills-opaque" />
         )}
 
         {meta.length > 0 && (
@@ -94,7 +94,7 @@ const locale = getLocaleFromPath(Astro.url.pathname);
               </Button>
             )}
             {repo && (
-              <Button href={repo} target="_blank" rel="noopener noreferrer" variant="brand-outline" size="md">
+              <Button href={repo} target="_blank" rel="noopener noreferrer" variant="brand-outline" size="md" class="hero-btn-opaque-brand">
                 <Icon name="github" size="sm" />
                 View source
               </Button>
