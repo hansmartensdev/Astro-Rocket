@@ -6,6 +6,13 @@ on:
   pull_request:
     branches: [main]
 
+# Every job here reads the repository and writes nothing back. Without this,
+# jobs get the default token, which on a push to this repository can write to
+# it — so an action or a dependency with an install script would be running
+# with push rights it has no use for.
+permissions:
+  contents: read
+
 jobs:
   quality:
     name: Lint, type check and tests
@@ -24,6 +31,31 @@ jobs:
       - run: pnpm run lint
       - run: pnpm run check
       - run: pnpm run test:run
+
+      # Reported, never blocking. A theme is cloned and then lives in somebody
+      # else's repository, so the useful thing is that the number is visible on
+      # every run and its direction is known — not that a transitive advisory
+      # with no patch available can stop a documentation fix from merging.
+      #
+      # Build tooling is where almost all of these live, which is why the
+      # production tree is reported separately: a finding there is one a
+      # deployed site could plausibly reach, and a finding in the full tree is
+      # usually one that only ever runs on a developer's machine.
+      - name: Dependency advisories
+        continue-on-error: true
+        run: |
+          {
+            echo '### Dependency advisories'
+            echo
+            echo 'Production dependencies:'
+            echo '```'
+            pnpm audit --prod 2>&1 | tail -2 || true
+            echo '```'
+            echo 'Everything, build tooling included:'
+            echo '```'
+            pnpm audit 2>&1 | tail -2 || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
   # Every deploy target gets built and inspected.
   #
