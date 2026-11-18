@@ -4,6 +4,7 @@ import type { APIRoute } from 'astro';
 import { z } from 'astro/zod';
 import { Resend } from 'resend';
 import siteConfig from '@/config/site.config';
+import { allowRequest, clientKey } from '@/lib/rate-limit';
 
 // Escape user-supplied values before they are interpolated into the
 // notification email's HTML, so a message containing markup (links,
@@ -24,7 +25,19 @@ const contactSchema = z.object({
   honeypot: z.string().max(0), // Anti-spam: must be empty
 });
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, clientAddress }) => {
+  // Before the body is read, so a flood costs as little as possible.
+  const limit = allowRequest(clientKey(request, clientAddress));
+  if (!limit.allowed) {
+    return new Response(
+      JSON.stringify({ success: false, errors: { form: ['Too many messages sent. Please try again in a minute.'] } }),
+      {
+        status: 429,
+        headers: { 'Content-Type': 'application/json', 'Retry-After': String(limit.retryAfter) },
+      }
+    );
+  }
+
   try {
     const formData = await request.formData();
 

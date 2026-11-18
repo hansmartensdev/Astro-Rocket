@@ -1,0 +1,49 @@
+version: 2
+
+# Astro Rocket is cloned rather than installed, so a dependency fixed here
+# reaches a site only when its owner updates from upstream. That makes an
+# out-of-date dependency in this repository the starting point for every new
+# site built on the theme, and keeping it current the maintainer's job.
+#
+# Grouped and monthly on purpose. One pull request a month that moves the patch
+# and minor versions together gets read and merged; thirty separate ones do not,
+# and a queue nobody reads is the same as no updates at all. Majors come
+# separately, because each one needs the build, the three deploy targets and
+# the preview container checked by hand.
+updates:
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 5
+    groups:
+      # Astro itself, its adapters and its integrations move together; mixing
+      # versions across them is how a build breaks in a way the error message
+      # does not explain.
+      astro:
+        patterns:
+          - astro
+          - '@astrojs/*'
+        update-types:
+          - minor
+          - patch
+      everything-else:
+        patterns:
+          - '*'
+        exclude-patterns:
+          - astro
+          - '@astrojs/*'
+        update-types:
+          - minor
+          - patch
+
+  # The workflow pins each action to a tag. A tag moves, so this is what tells
+  # anyone the pin is behind.
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    groups:
+      actions:
+        patterns:
+          - '*'

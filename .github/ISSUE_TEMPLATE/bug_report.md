@@ -27,7 +27,7 @@ What actually happened.
 ## Environment
 
 - OS: [e.g. macOS 14, Windows 11]
-- Node version: [e.g. 22.12.0]
+- Node version: [e.g. 22.23.4]
 - pnpm version: [e.g. 9.x]
 - Browser (if relevant): [e.g. Chrome 120, Safari 17]
 

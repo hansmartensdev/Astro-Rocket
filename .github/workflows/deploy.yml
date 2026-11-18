@@ -6,6 +6,13 @@ on:
   pull_request:
     branches: [main]
 
+# Every job here reads the repository and writes nothing back. Without this,
+# jobs get the default token, which on a push to this repository can write to
+# it — so an action or a dependency with an install script would be running
+# with push rights it has no use for.
+permissions:
+  contents: read
+
 jobs:
   quality:
     name: Lint, type check and tests
@@ -24,6 +31,31 @@ jobs:
       - run: pnpm run lint
       - run: pnpm run check
       - run: pnpm run test:run
+
+      # Reported, never blocking. A theme is cloned and then lives in somebody
+      # else's repository, so the useful thing is that the number is visible on
+      # every run and its direction is known — not that a transitive advisory
+      # with no patch available can stop a documentation fix from merging.
+      #
+      # Build tooling is where almost all of these live, which is why the
+      # production tree is reported separately: a finding there is one a
+      # deployed site could plausibly reach, and a finding in the full tree is
+      # usually one that only ever runs on a developer's machine.
+      - name: Dependency advisories
+        continue-on-error: true
+        run: |
+          {
+            echo '### Dependency advisories'
+            echo
+            echo 'Production dependencies:'
+            echo '```'
+            pnpm audit --prod 2>&1 | tail -2 || true
+            echo '```'
+            echo 'Everything, build tooling included:'
+            echo '```'
+            pnpm audit 2>&1 | tail -2 || true
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
 
   # Every deploy target gets built and inspected.
   #
@@ -51,6 +83,35 @@ jobs:
           node-version: 22
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
+
+      # Only the Vercel adapter is a dependency of the theme, so the other two
+      # targets install theirs first — the same extra step the README gives a
+      # site deploying to those platforms. This leg is therefore also the test
+      # that the documented command is the right one.
+      - name: Install the adapter for this target
+        if: matrix.target != 'vercel'
+        run: pnpm add -D @astrojs/${{ matrix.target }}
+
+      # The failure path of the same mechanism, on the one leg that has no
+      # extra adapter installed: asking for a target whose adapter is absent
+      # has to stop the build and name the package to install. Without this,
+      # a config that silently fell back to Vercel would deploy the wrong
+      # output to Netlify and every leg here would still be green.
+      - name: A missing adapter stops the build and says which one
+        if: matrix.target == 'vercel'
+        env:
+          DEPLOY_TARGET: netlify
+          SITE_URL: https://example.com
+        run: |
+          if pnpm run build > missing-adapter.log 2>&1; then
+            echo "::error::the build succeeded with no Netlify adapter installed"
+            exit 1
+          fi
+          grep -q '@astrojs/netlify' missing-adapter.log || {
+            echo "::error::the failure never named the package to install"
+            cat missing-adapter.log
+            exit 1
+          }
 
       - name: Build
         run: pnpm run build
@@ -152,6 +213,51 @@ jobs:
 
       - name: A missing page is a 404
         run: test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:4321/no-such-page/)" = "404"
+
+      # The three deploy targets send these through vercel.json, netlify.toml
+      # and public/_headers; the container sends them through nginx. Reading
+      # them back off four different kinds of response is the point, because
+      # each one is a way nginx drops them silently: a location block that sets
+      # a header of its own stops inheriting the server block's, and a header
+      # without `always` is attached to successful responses only — which is
+      # every response except the two below.
+      #
+      # Strict-Transport-Security is not checked. The other targets send it and
+      # the container does not, for the reason in nginx-security-headers.conf.
+      - name: Every response carries the security headers
+        run: |
+          astro_asset=$(curl -fsS http://localhost:4321/ | grep -oE '/_astro/[A-Za-z0-9._-]+\.(css|js)' | head -1)
+          test -n "$astro_asset" || {
+            echo "::error::found no /_astro/ asset on the home page to check"
+            exit 1
+          }
+          for path in / no-such-page/ api/contact "${astro_asset#/}"; do
+            headers=$(curl -sS -D - -o /dev/null "http://localhost:4321/$path")
+            for header in \
+              'x-content-type-options: nosniff' \
+              'x-frame-options: DENY' \
+              'referrer-policy: strict-origin-when-cross-origin' \
+              'permissions-policy: camera=(), microphone=(), geolocation=()'
+            do
+              printf '%s' "$headers" | tr -d '\r' | grep -qiF "$header" || {
+                echo "::error::/$path was served without '$header'"
+                printf '%s' "$headers"
+                exit 1
+              }
+            done
+          done
+
+      # server_tokens off. nginx otherwise names its exact version in every
+      # response, which tells a scanner which nginx advisories to try.
+      - name: The server does not advertise its version
+        run: |
+          server=$(curl -sS -D - -o /dev/null http://localhost:4321/ | tr -d '\r' | grep -i '^server:')
+          echo "$server"
+          printf '%s' "$server" | grep -qE '[0-9]+\.[0-9]+' && {
+            echo "::error::the Server header carries a version: $server"
+            exit 1
+          }
+          exit 0
 
       # The export service builds the files that go on a host, so the address
       # in them matters. The build-time guards cannot catch a wrong one — they

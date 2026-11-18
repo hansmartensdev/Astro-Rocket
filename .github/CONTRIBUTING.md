@@ -18,7 +18,7 @@ Thank you for your interest in contributing. Astro Rocket is a free, open-source
 
 ## Development setup
 
-**Prerequisites:** Node.js ≥ 22.12.0 and pnpm
+**Prerequisites:** Node.js ≥ 22.23.4 and pnpm
 
 ```bash
 # Fork and clone the repo

@@ -328,6 +328,19 @@ import NewsletterForm from '@/components/patterns/NewsletterForm.astro';
 
 All of its text comes from the `newsletter.*` keys in `src/i18n/en.json`, and the props `placeholder`, `buttonText` and `successMessage` override them per usage. Submissions carry a hidden honeypot field that the endpoint checks before anything else.
 
+### Rate limiting on the form endpoints
+
+`/api/contact` and `/api/newsletter` are unauthenticated POST routes that spend your Resend account — one sends mail from your domain, the other writes into your audience. Validation and the honeypot stop a bot that fills every field it finds; neither stops somebody who reads the form once and posts it in a loop.
+
+The theme counts requests per address in each server instance's memory and answers **429** past **five in a minute**, with a `Retry-After` header. The two numbers are `LIMIT` and `WINDOW_SECONDS` in `src/lib/rate-limit.ts`.
+
+Two things to know about it:
+
+- **It is a floor, not a wall.** The count is per instance, so on a serverless host the real ceiling is five times however many instances are warm, and a cold start begins again at zero. It stops one client hammering one warm instance. It does not stop a request spread across many addresses.
+- **It fails open.** When no client address can be read the request is allowed, because a contact form that silently refuses real enquiries is a worse failure than one that is occasionally spammed.
+
+**If your site attracts real abuse, put a limiter in front of it** — Vercel's firewall, Cloudflare's rate limiting, Netlify's. Those see the request before any of the theme's code runs and hold one count across every instance.
+
 ---
 
 ## Internationalization (i18n)
@@ -930,6 +943,22 @@ The search button shows by default. Hide it per header instance:
 
 Configuration files included for major platforms.
 
+### Adapters
+
+Only the Vercel adapter is installed. Netlify and Cloudflare each need theirs
+added first:
+
+```bash
+pnpm add -D @astrojs/netlify      # for Netlify
+pnpm add -D @astrojs/cloudflare   # for Cloudflare
+```
+
+A site deploys to one platform, so installing all three would mean carrying two
+platforms' build tooling for nothing. It is not a small amount: the three
+adapters together bring 1,154 packages into a production install, and Vercel's
+alone brings 673. Building with a `DEPLOY_TARGET` whose adapter is missing
+fails with a message naming the package to install.
+
 ### Vercel (Recommended)
 
 ```bash
@@ -939,6 +968,7 @@ vercel
 ### Netlify
 
 ```bash
+pnpm add -D @astrojs/netlify
 netlify deploy --prod
 ```
 
@@ -947,6 +977,7 @@ netlify deploy --prod
 Astro's Cloudflare adapter (`@astrojs/cloudflare`) targets **Cloudflare Workers** (the platform behind today's "Workers & Pages"): the prerendered pages are served as static assets and the `/api/*` routes — the contact form and newsletter — run as the Worker. Build with the Cloudflare target, then deploy with Wrangler:
 
 ```bash
+pnpm add -D @astrojs/cloudflare
 DEPLOY_TARGET=cloudflare pnpm build
 npx wrangler deploy
 ```
@@ -956,6 +987,30 @@ The build generates the Worker and static-asset config automatically. The bundle
 ### Static export (no serverless)
 
 `pnpm build` uses the default Vercel adapter and writes the static site to `dist/client/`. You can host that folder on any static host — but the `/api/*` routes (contact form, newsletter) need a serverless/edge runtime, so on a purely static host you'd wire those forms up to an external service instead.
+
+### Security headers
+
+Every target sends the same five response headers, each from the file its
+platform reads:
+
+| Header | Value |
+|---|---|
+| `X-Content-Type-Options` | `nosniff` |
+| `X-Frame-Options` | `DENY` |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` |
+| `Permissions-Policy` | `camera=(), microphone=(), geolocation=()` |
+| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` |
+
+Vercel reads `vercel.json`, Netlify reads `netlify.toml`, and Cloudflare reads
+`public/_headers` — which Netlify also reads, so those two are kept in step.
+The local preview container sends the first four from
+`nginx-security-headers.conf`; it omits HSTS, which a browser ignores over the
+plain HTTP it serves on localhost.
+
+Hosting `dist/client/` somewhere else means setting these headers there: they
+come from the platform's configuration, not from the built files. There is no
+`Content-Security-Policy` — a useful one depends on which analytics, embeds and
+fonts a site ends up using, so the theme does not guess.
 
 ---
 

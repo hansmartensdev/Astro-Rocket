@@ -1,6 +1,7 @@
 import type { APIRoute } from 'astro';
 import { z } from 'astro/zod';
 import { Resend } from 'resend';
+import { allowRequest, clientKey } from '@/lib/rate-limit';
 
 export const prerender = false;
 
@@ -9,7 +10,19 @@ const newsletterSchema = z.object({
   honeypot: z.string().max(0).optional(),
 });
 
-export const POST: APIRoute = async ({ request }) => {
+export const POST: APIRoute = async ({ request, clientAddress }) => {
+  // Before the body is read, so a flood costs as little as possible.
+  const limit = allowRequest(clientKey(request, clientAddress));
+  if (!limit.allowed) {
+    return new Response(
+      JSON.stringify({ success: false, error: 'Too many sign-ups. Please try again in a minute.' }),
+      {
+        status: 429,
+        headers: { 'Content-Type': 'application/json', 'Retry-After': String(limit.retryAfter) },
+      }
+    );
+  }
+
   try {
     const formData = await request.formData();
     const email = formData.get('email')?.toString() || '';

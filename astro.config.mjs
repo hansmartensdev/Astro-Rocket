@@ -8,8 +8,6 @@ import react from '@astrojs/react';
 import icon from 'astro-icon';
 import tailwindcss from '@tailwindcss/vite';
 import vercel from '@astrojs/vercel';
-import netlify from '@astrojs/netlify';
-import cloudflare from '@astrojs/cloudflare';
 import i18nConfig from './src/config/i18n.config.ts';
 import { SITE_URL_FALLBACK } from './src/config/site-url.ts';
 import {
@@ -60,14 +58,41 @@ for (const file of ['.env.local', '.env']) {
  * Cloudflare Pages, as a Pages Function.
  */
 const deployTarget = process.env.DEPLOY_TARGET;
-function resolveAdapter() {
-  switch (deployTarget) {
-    case 'netlify':
-      return netlify();
-    case 'cloudflare':
-      return cloudflare();
-    default:
-      return vercel();
+
+/**
+ * Only the adapter being built for is loaded, and only Vercel's is a
+ * dependency of the theme.
+ *
+ * All three used to be imported at the top of this file, so every clone
+ * installed all three — and with them the whole of Netlify's and Cloudflare's
+ * build tooling, whichever platform the site was actually going to. That is
+ * nearly half of the theme's dependency surface: a production install goes
+ * from 1,154 packages to 673, and `pnpm audit --prod` from 206 findings to
+ * 118. The two
+ * critical findings are not among the ones that go; both are the same node-tar
+ * advisory, reached through Vercel's own adapter and through astro-icon, and
+ * both are build-time tools that no deployed site runs.
+ *
+ * `pnpm add -D @astrojs/netlify` (or `@astrojs/cloudflare`) before building
+ * for those targets; the error below says so when it is missing. The import
+ * specifier is a variable, which Vite cannot follow, and the comment tells it
+ * not to try rather than warn on every build.
+ */
+async function resolveAdapter() {
+  const optional = { netlify: '@astrojs/netlify', cloudflare: '@astrojs/cloudflare' };
+  const pkg = optional[deployTarget];
+  if (!pkg) return vercel();
+
+  try {
+    const mod = await import(/* @vite-ignore */ pkg);
+    return mod.default();
+  } catch (error) {
+    throw new Error(
+      `DEPLOY_TARGET=${deployTarget} needs ${pkg}, which is not installed. ` +
+        `Run \`pnpm add -D ${pkg}\` and build again. Only the Vercel adapter ` +
+        `ships as a dependency, so a site deploying to one platform does not ` +
+        `carry the build tooling of the others.\n\n${error.message}`
+    );
   }
 }
 
@@ -353,7 +378,7 @@ const astroI18nOptions = i18nEnabled
 
 export default defineConfig({
   output: 'static',
-  adapter: resolveAdapter(),
+  adapter: await resolveAdapter(),
   site: process.env.SITE_URL || SITE_URL_FALLBACK,
   ...(astroI18nOptions ? { i18n: astroI18nOptions } : {}),
 

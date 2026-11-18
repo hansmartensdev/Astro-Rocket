@@ -52,5 +52,21 @@ A few things are your responsibility rather than the theme's:
   every visitor. Never put a private key behind that prefix.
 - **Update your dependencies.** Most vulnerabilities in a site built on this
   theme will come from packages, not from the theme's own code.
+- **Install only the adapter you deploy with.** The theme ships Vercel's; the
+  README says how to add Netlify's or Cloudflare's. Each one brings a
+  platform's whole build toolchain, so installing the two you do not deploy to
+  roughly doubles the packages you are responsible for updating.
 - **Check your own additions.** Forms, API routes and third-party embeds you add
   are outside the theme's control and its testing.
+- **Put a rate limiter in front of the site.** `/api/contact` and
+  `/api/newsletter` are unauthenticated routes that spend your Resend account:
+  one sends mail from your domain, the other writes into your audience. The
+  theme counts requests per address in each server instance's memory and
+  answers `429` past five in a minute, which stops one client hammering one
+  warm instance. It cannot stop a request spread across many addresses, and on
+  a serverless host the real ceiling is that limit times however many instances
+  are warm, with a cold start beginning again at zero. Your platform's own
+  limiter — Vercel's firewall, Cloudflare's rate limiting, Netlify's — sees the
+  request before any of the theme's code runs and holds one count for every
+  instance. If your site attracts real abuse, that is the control that will
+  hold.
