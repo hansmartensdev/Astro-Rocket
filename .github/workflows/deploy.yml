@@ -13,17 +13,28 @@ on:
 permissions:
   contents: read
 
+# Each action is pinned to a commit, with the version it was at in the comment
+# beside it. A tag is a moving reference: whoever publishes an action can
+# repoint `v7` at any commit, and that commit then runs here with the
+# repository checked out. `pnpm/action-setup`'s `v6` is its own commit, shared
+# with none of its v6.x releases, so what `@v6` meant was already a question
+# only the publisher could answer.
+#
+# Dependabot reads commit pins as readily as tags and raises the same pull
+# requests against them, so the trade is the SHA's unreadability against
+# knowing what runs.
+
 jobs:
   quality:
     name: Lint, type check and tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       # No version here on purpose: pnpm/action-setup reads `packageManager`
       # from package.json, so CI, Docker and a developer's machine cannot
       # drift onto three different pnpm versions.
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: pnpm/action-setup@f53f5227a9e83886ab598c617f3c170fab62f0d3 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: 'pnpm'
@@ -57,6 +68,31 @@ jobs:
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
 
+  # What a pull request adds to the dependency tree, checked before it merges.
+  #
+  # The quality job's audit step reports the whole tree and never blocks, which
+  # is right for a number that is mostly build tooling and mostly unpatchable.
+  # This asks a narrower question: does this pull request introduce an advisory
+  # that was not there before. That one is worth answering while the change is
+  # still a proposal, because declining it then costs nothing.
+  #
+  # `fail-on-severity: high` rather than the default of `low`. A theme carries
+  # a long tail of transitive moderates with no patch available, and a gate
+  # that fires on those blocks Dependabot's own updates and teaches everyone to
+  # merge past it.
+  #
+  # Pull requests only: the action reads the diff between a base and a head and
+  # has nothing to compare on a push to main.
+  dependency-review:
+    name: Dependency review
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      - uses: actions/dependency-review-action@bbc44d14a204704ccc493733616cd1e93a0321ec # v5.0.1
+        with:
+          fail-on-severity: high
+
   # Every deploy target gets built and inspected.
   #
   # Both Cloudflare failures in #600 shipped because nothing here ever built
@@ -73,12 +109,12 @@ jobs:
       matrix:
         target: [vercel, netlify, cloudflare]
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       # No version here on purpose: pnpm/action-setup reads `packageManager`
       # from package.json, so CI, Docker and a developer's machine cannot
       # drift onto three different pnpm versions.
-      - uses: pnpm/action-setup@v6
-      - uses: actions/setup-node@v7
+      - uses: pnpm/action-setup@f53f5227a9e83886ab598c617f3c170fab62f0d3 # v6
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
         with:
           node-version: 22
           cache: 'pnpm'
@@ -130,7 +166,7 @@ jobs:
     name: Local preview container
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v7
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       # Through compose rather than `docker build`, because compose is what the
       # README tells people to run and what carries the configuration into the
