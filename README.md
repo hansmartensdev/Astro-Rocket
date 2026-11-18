@@ -7,7 +7,7 @@
 </p>
 
 <p align="center">
-  <a href="https://astro.build"><img src="https://img.shields.io/badge/Astro-7.3-bc52ee?logo=astro&logoColor=white" alt="Astro" /></a>
+  <a href="https://astro.build"><img src="https://img.shields.io/badge/Astro-7.4-bc52ee?logo=astro&logoColor=white" alt="Astro" /></a>
   <a href="https://tailwindcss.com"><img src="https://img.shields.io/badge/Tailwind-4.3-38bdf8?logo=tailwindcss&logoColor=white" alt="Tailwind CSS" /></a>
   <a href="https://www.typescriptlang.org"><img src="https://img.shields.io/badge/TypeScript-5.7-3178c6?logo=typescript&logoColor=white" alt="TypeScript" /></a>
   <a href="https://github.com/hansmartensdev/astro-rocket/actions/workflows/deploy.yml"><img src="https://github.com/hansmartensdev/astro-rocket/actions/workflows/deploy.yml/badge.svg" alt="Build, lint, type check and tests" /></a>
@@ -109,7 +109,7 @@ Use all of it or only the parts you need. The site you build on it is yours.
 
 ### Prerequisites
 
-- **Node.js 22.12.0+** (required for Astro 7)
+- **Node.js 22.23.4+** (required for Astro 7.4)
 - **pnpm 10.33.0** — the version in `packageManager`, which `corepack` installs for you
 
 ### Installation
