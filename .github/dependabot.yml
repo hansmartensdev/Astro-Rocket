@@ -39,6 +39,13 @@ updates:
 
   # The workflow pins each action to a tag. A tag moves, so this is what tells
   # anyone the pin is behind.
+  #
+  # `update-types` here for the same reason as the npm groups above, and because
+  # the group without it put three action majors into one pull request. An
+  # action major changes how a step behaves — checkout v7 refuses fork pull
+  # requests on `pull_request_target`, pnpm/action-setup v4 rejects a version
+  # that disagrees with `packageManager` — and when one of those breaks a run,
+  # the useful pull request is the one that moved a single action.
   - package-ecosystem: github-actions
     directory: /
     schedule:
@@ -47,3 +54,6 @@ updates:
       actions:
         patterns:
           - '*'
+        update-types:
+          - minor
+          - patch
