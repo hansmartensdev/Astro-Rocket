@@ -8,6 +8,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+## [2.7.0] — 2026-11-18
+
+### Changed
+
+- **Astro 7.4.12**, up from 7.3.1. Nothing in the theme needed changing and no API moved, but this release carries one requirement that does reach every site built on it, so it is a minor rather than a patch.
+- **Node.js 22.23.4 is the new floor**, up from 22.12.0 — Astro's own `engines` field raised it. A site on Node 22.12 through 22.22 that merges this will not build until its runtime moves. The README's prerequisite and the `engines` field both follow, and `readme-claims.test.ts` compares the two.
+- **7.4 replaces the bundler.** `esbuild` leaves the dependency tree and `rolldown` enters it, Vite moves from ^8.0.13 to ^8.3.6, and `@astrojs/compiler-rs` from ^0.4.0 to ^0.5.2. `@astrojs/runtime` and `@astrojs/vite-plugin-astro` are new; `clsx`, `common-ancestor-path`, `find-proc`, `js-yaml`, `semver` and `yargs-parser` are gone. The lockfile grows from 1297 resolutions to 1364.
+- **No integration needed upgrading.** Astro's `peerDependencies` are unchanged between 7.3.1 and 7.4.12, so `@astrojs/mdx` 8.0.0, the Vercel, Netlify and Cloudflare adapters, `@astrojs/react`, `@astrojs/sitemap` and `@astrojs/check` all stay where they are.
+- **The built bytes change on every page, and the rendering does not.** Two causes, both from the new compiler and bundler. Whitespace between an HTML comment and the element after it is no longer emitted — 1173 occurrences across the site's 89 pages — and the minifier rewrites inline scripts differently, turning `!r||!s||(…)` into `r&&s&&(…)` and the like. Anyone who diffs their built output against a previous build will see it move everywhere; nothing about what a visitor sees moves with it.
+- Verified by building the site on both versions and comparing the rendered pages pixel for pixel, in both colour modes: every page is identical apart from the component showcase, where comparing 7.3.1 against *itself* produces differences of the same size, because that page animates. Build output is 88 pages either way, `astro check` reports 0 errors and 0 warnings, and all 168 tests pass.
+
+
 ## [2.6.0] — 2026-09-03
 
 ### Changed
