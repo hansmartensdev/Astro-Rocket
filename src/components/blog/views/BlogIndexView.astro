@@ -32,9 +32,6 @@ interface Props {
 
 const { locale = defaultLocale } = Astro.props;
 
-
-// Newsletter signup — opt-in, since the endpoint needs Resend keys to work.
-
 const posts = await getPublishedPosts(locale);
 
 // Featured posts always appear on page 1; the "All posts" grid paginates
