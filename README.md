@@ -328,6 +328,19 @@ import NewsletterForm from '@/components/patterns/NewsletterForm.astro';
 
 All of its text comes from the `newsletter.*` keys in `src/i18n/en.json`, and the props `placeholder`, `buttonText` and `successMessage` override them per usage. Submissions carry a hidden honeypot field that the endpoint checks before anything else.
 
+### Rate limiting on the form endpoints
+
+`/api/contact` and `/api/newsletter` are unauthenticated POST routes that spend your Resend account — one sends mail from your domain, the other writes into your audience. Validation and the honeypot stop a bot that fills every field it finds; neither stops somebody who reads the form once and posts it in a loop.
+
+The theme counts requests per address in each server instance's memory and answers **429** past **five in a minute**, with a `Retry-After` header. The two numbers are `LIMIT` and `WINDOW_SECONDS` in `src/lib/rate-limit.ts`.
+
+Two things to know about it:
+
+- **It is a floor, not a wall.** The count is per instance, so on a serverless host the real ceiling is five times however many instances are warm, and a cold start begins again at zero. It stops one client hammering one warm instance. It does not stop a request spread across many addresses.
+- **It fails open.** When no client address can be read the request is allowed, because a contact form that silently refuses real enquiries is a worse failure than one that is occasionally spammed.
+
+**If your site attracts real abuse, put a limiter in front of it** — Vercel's firewall, Cloudflare's rate limiting, Netlify's. Those see the request before any of the theme's code runs and hold one count across every instance.
+
 ---
 
 ## Internationalization (i18n)
