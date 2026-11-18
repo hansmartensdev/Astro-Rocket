@@ -1,0 +1,31 @@
+# Response headers for hosts that read a `_headers` file.
+#
+# Cloudflare is the reason this file exists. The Vercel target carries its
+# headers in vercel.json and the Netlify target carries them in netlify.toml,
+# but the Cloudflare adapter had nothing — wrangler.toml sets only a name and a
+# compatibility date — so a site deployed there was served with none of the
+# protections the same theme sets on the other two targets.
+#
+# Netlify reads this file as well. Where a rule here and a rule in netlify.toml
+# both match a path, netlify.toml wins; the two are kept in step so it does not
+# matter which one answers.
+#
+# The file is copied into the output of every build, including Vercel's, where
+# no host reads it and it does nothing. It carries no secrets — it is a list of
+# the headers the site already sends.
+#
+# Keep these in step with the `headers` array in vercel.json and the
+# `[[headers]]` blocks in netlify.toml.
+
+/*
+  X-Content-Type-Options: nosniff
+  X-Frame-Options: DENY
+  Referrer-Policy: strict-origin-when-cross-origin
+  Permissions-Policy: camera=(), microphone=(), geolocation=()
+  Strict-Transport-Security: max-age=31536000; includeSubDomains
+
+/fonts/*
+  Cache-Control: public, max-age=31536000, immutable
+
+/_astro/*
+  Cache-Control: public, max-age=31536000, immutable
