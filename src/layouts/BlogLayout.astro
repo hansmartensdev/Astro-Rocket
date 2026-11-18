@@ -21,9 +21,6 @@ import BlogCta from '@/components/blog/BlogCta.astro';
 
 const locale = getLocaleFromPath(Astro.url.pathname);
 
-
-// Newsletter signup — opt-in, since the endpoint needs Resend keys to work.
-
 interface Props {
   title: string;
   description: string;

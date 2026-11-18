@@ -187,17 +187,18 @@ export interface SiteConfig {
     };
   };
   /**
-   * Newsletter signup, shown in the "follow along" section of the blog index
-   * and the foot of every post.
+   * Newsletter signup, shown in the brand column of the `columns` footer.
    *
-   * Off by default, and deliberately so: the form posts to `/api/newsletter`,
-   * which needs `RESEND_API_KEY` and `RESEND_AUDIENCE_ID`. Without those the
-   * endpoint answers "Newsletter service is not configured", so a site that
-   * showed the form before its owner had a mailing list would be collecting
-   * failures. Set your keys, then turn this on.
+   * On by default, so a clone looks finished on the first `pnpm dev` rather
+   * than after a checklist. The form posts to `/api/newsletter`, which needs
+   * `RESEND_API_KEY` and `RESEND_AUDIENCE_ID`, and it decides its own state
+   * when the page renders rather than when somebody submits: without the keys
+   * it names them in development and disables its submit in production, so no
+   * visitor types an address that has nowhere to go. Set this to false to hide
+   * it regardless.
    */
   newsletter?: {
-    /** Master switch — set to true to show the signup site-wide */
+    /** Master switch — true by default; false hides the signup site-wide */
     enabled: boolean;
   };
   /**

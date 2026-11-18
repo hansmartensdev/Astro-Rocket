@@ -2,6 +2,9 @@ import type { APIRoute } from 'astro';
 import { z } from 'astro/zod';
 import { Resend } from 'resend';
 import { allowRequest, clientKey } from '@/lib/rate-limit';
+// See the note in `contact.ts`: read at runtime so the keys stay out of the
+// built bundle and can be rotated without a rebuild.
+import { RESEND_API_KEY, RESEND_AUDIENCE_ID } from 'astro:env/server';
 
 export const prerender = false;
 
@@ -51,8 +54,8 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
       );
     }
 
-    const apiKey = import.meta.env.RESEND_API_KEY;
-    const audienceId = import.meta.env.RESEND_AUDIENCE_ID;
+    const apiKey = RESEND_API_KEY;
+    const audienceId = RESEND_AUDIENCE_ID;
 
     if (!apiKey || !audienceId) {
       console.error('Newsletter: RESEND_API_KEY or RESEND_AUDIENCE_ID is not configured');

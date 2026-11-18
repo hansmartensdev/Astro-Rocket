@@ -13,9 +13,9 @@
 # Everything Astro inlines into the generated files at build time, shared by
 # both services so a preview and an export build the same site.
 #
-# The four server-side secrets (RESEND_API_KEY, RESEND_FROM_EMAIL,
-# RESEND_AUDIENCE_ID, NEWSLETTER_API_KEY) are not here: they are read by the
-# API routes, and neither service carries routes.
+# The three server-side secrets (RESEND_API_KEY, RESEND_FROM_EMAIL,
+# RESEND_AUDIENCE_ID) are not here: they are read by the API routes, and
+# neither service carries routes.
 x-build-config: &build-config
   PUBLIC_GA_MEASUREMENT_ID: ${PUBLIC_GA_MEASUREMENT_ID:-}
   PUBLIC_GTM_ID: ${PUBLIC_GTM_ID:-}
