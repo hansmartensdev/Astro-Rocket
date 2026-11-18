@@ -17,7 +17,7 @@
 # Vercel, Netlify and Cloudflare, and only those builds carry the API routes.
 
 # ── Build ────────────────────────────────────────────────────────────────────
-# Node 22 matches .nvmrc and the `engines` floor of 22.12.0.
+# Node 22 matches .nvmrc and satisfies the `engines` floor of 22.23.4.
 FROM node:22 AS build
 
 WORKDIR /app
