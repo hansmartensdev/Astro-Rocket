@@ -8,6 +8,26 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ## [Unreleased]
 
+### Changed
+
+- **Deploying to Netlify or Cloudflare needs its adapter installed first.** Run `pnpm add -D @astrojs/netlify` or `pnpm add -D @astrojs/cloudflare`, then build as before. **A site already deploying to either platform will fail its first build after merging this until that package is added.** The build stops and names the package to install, rather than falling back to the Vercel adapter and writing output for the wrong platform. The README's deployment section carries the command in the Netlify and Cloudflare instructions.
+- **Only the Vercel adapter ships as a dependency.** All three were imported at the top of `astro.config.mjs` and listed in `dependencies`, so every clone installed all three — and with them the whole of two platforms' build toolchains, whichever platform the site was going to. A production install goes from 1,154 packages to 673, and `pnpm audit --prod` from 206 findings to 118, of which the high findings fall from 101 to 55. The two critical findings do not go: both are the same node-tar advisory, reached through Vercel's own adapter and through `astro-icon`, and both are build-time tools that no deployed site runs. `resolveAdapter()` now loads the target's adapter with a dynamic import, so a build reads only the adapter it is building for.
+
+### Added
+
+- **The two public form endpoints count requests per address.** `/api/contact` and `/api/newsletter` allow five per address a minute and answer `429` with `Retry-After` past that, checked before the request body is read. Both routes are unauthenticated and spend the site owner's Resend account — one sends mail from their domain, the other writes into their audience — and validation and the honeypot stop a bot that fills every field, not somebody who reads the form once and posts it in a loop. The count lives in each server instance's memory, so it stops one client hammering one warm instance; it cannot stop a request spread across many addresses, and on a serverless host the ceiling is five times however many instances are warm, with a cold start beginning again at zero. A limiter in front of the site — Vercel's firewall, Cloudflare's rate limiting, Netlify's — sees the request before any of this runs and holds one count for every instance, and is what a site facing real pressure should use. When no client address can be read the request is allowed: a contact form that refuses real enquiries is a worse failure than one that is occasionally spammed. The map of tracked addresses is swept on write and capped at 10,000, so rotating addresses cannot grow it without limit.
+- **The local preview container sends the security headers.** The three deploy targets each send five, from `vercel.json`, `netlify.toml` and `public/_headers`; the container sent none and named its exact nginx version in every response. It now sends four from `nginx-security-headers.conf`, with `server_tokens off`. `Strict-Transport-Security` is the one left out: the container serves plain HTTP on localhost, where a browser ignores the header, and `localhost` is one host shared by every project on a machine, so a browser that did honour it would force HTTPS on every other local server. The headers sit in their own file because a location block that sets any header of its own stops inheriting the server block's list, and both locations here set `Cache-Control`.
+- **Dependabot covers npm and the workflow's action pins**, monthly and grouped. Astro, its adapters and its integrations move together, because mixing versions across them breaks a build in a way the error does not explain. Majors arrive on their own, each needing the build, the three deploy targets and the preview container checked by hand.
+- **CI reads the new behaviour back.** The container job asserts all four headers on four kinds of response — a page, a 404, the `501` from `/api/`, and a hashed asset — each of which is a way nginx drops a header with no configuration error to see, and asserts that the `Server` header carries no version. The Vercel matrix leg asserts that a build for an absent adapter stops and names the package; the Netlify and Cloudflare legs install their adapter first, so those legs run the command the README gives. The quality job reports `pnpm audit` into the run summary for the production tree and the whole tree separately, and never blocks on it.
+
+### Security
+
+- **The workflow token is restricted to `contents: read`.** There was no `permissions` block, so each job ran with the default token, which on a push to this repository can write to it. The three jobs check out the code, build it and read the output back, so an action or a package install script was running with push rights it has no use for.
+
+### Fixed
+
+- **Four files named Node 22.12.0 as the floor**, which `engines` raised to 22.23.4 in 2.7.0: the contributing guide, the getting-started post, the bug-report template and a comment in the Dockerfile. Each told a reader a version `pnpm install` would then refuse. The README was already correct because a test compared it against `engines`; `readme-claims.test.ts` now reads the other four as well.
+
 ## [2.7.0] — 2026-11-18
 
 ### Changed
