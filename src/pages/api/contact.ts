@@ -5,6 +5,11 @@ import { z } from 'astro/zod';
 import { Resend } from 'resend';
 import siteConfig from '@/config/site.config';
 import { allowRequest, clientKey } from '@/lib/rate-limit';
+// Through `astro:env/server` rather than `import.meta.env`, which inlines a
+// secret into the built server bundle. Read at runtime, the key can be
+// rotated on the platform without a rebuild, and it stays out of the build
+// output. `src/lib/email.ts` reads the same variables the same way.
+import { RESEND_API_KEY, RESEND_FROM_EMAIL } from 'astro:env/server';
 
 // Escape user-supplied values before they are interpolated into the
 // notification email's HTML, so a message containing markup (links,
@@ -77,7 +82,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     }
 
     // Send email via Resend
-    const apiKey = import.meta.env.RESEND_API_KEY;
+    const apiKey = RESEND_API_KEY;
     if (!apiKey) {
       console.error('RESEND_API_KEY is not set');
       return new Response(
@@ -89,7 +94,7 @@ export const POST: APIRoute = async ({ request, clientAddress }) => {
     const resend = new Resend(apiKey);
 
     const toEmail = siteConfig.email;
-    const fromEmail = import.meta.env.RESEND_FROM_EMAIL || toEmail;
+    const fromEmail = RESEND_FROM_EMAIL || toEmail;
     const siteLabel = siteConfig.name;
 
     const subject = result.data.subject
