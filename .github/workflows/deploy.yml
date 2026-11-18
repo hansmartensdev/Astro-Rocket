@@ -18,12 +18,12 @@ jobs:
     name: Lint, type check and tests
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # No version here on purpose: pnpm/action-setup reads `packageManager`
       # from package.json, so CI, Docker and a developer's machine cannot
       # drift onto three different pnpm versions.
-      - uses: pnpm/action-setup@v3
-      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: 'pnpm'
@@ -73,12 +73,12 @@ jobs:
       matrix:
         target: [vercel, netlify, cloudflare]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
       # No version here on purpose: pnpm/action-setup reads `packageManager`
       # from package.json, so CI, Docker and a developer's machine cannot
       # drift onto three different pnpm versions.
-      - uses: pnpm/action-setup@v3
-      - uses: actions/setup-node@v4
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
         with:
           node-version: 22
           cache: 'pnpm'
@@ -130,7 +130,7 @@ jobs:
     name: Local preview container
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       # Through compose rather than `docker build`, because compose is what the
       # README tells people to run and what carries the configuration into the
