@@ -78,6 +78,7 @@ FROM nginx:alpine AS runtime
 # this is the one path that does not depend on which target was built.
 COPY --from=build /app/dist/client /usr/share/nginx/html
 COPY nginx.conf /etc/nginx/nginx.conf
+COPY nginx-security-headers.conf /etc/nginx/security-headers.conf
 
 # 8080 rather than 80, so the image runs as a non-root user if you ask it to.
 EXPOSE 8080

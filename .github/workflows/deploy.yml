@@ -182,6 +182,51 @@ jobs:
       - name: A missing page is a 404
         run: test "$(curl -s -o /dev/null -w '%{http_code}' http://localhost:4321/no-such-page/)" = "404"
 
+      # The three deploy targets send these through vercel.json, netlify.toml
+      # and public/_headers; the container sends them through nginx. Reading
+      # them back off four different kinds of response is the point, because
+      # each one is a way nginx drops them silently: a location block that sets
+      # a header of its own stops inheriting the server block's, and a header
+      # without `always` is attached to successful responses only — which is
+      # every response except the two below.
+      #
+      # Strict-Transport-Security is not checked. The other targets send it and
+      # the container does not, for the reason in nginx-security-headers.conf.
+      - name: Every response carries the security headers
+        run: |
+          astro_asset=$(curl -fsS http://localhost:4321/ | grep -oE '/_astro/[A-Za-z0-9._-]+\.(css|js)' | head -1)
+          test -n "$astro_asset" || {
+            echo "::error::found no /_astro/ asset on the home page to check"
+            exit 1
+          }
+          for path in / no-such-page/ api/contact "${astro_asset#/}"; do
+            headers=$(curl -sS -D - -o /dev/null "http://localhost:4321/$path")
+            for header in \
+              'x-content-type-options: nosniff' \
+              'x-frame-options: DENY' \
+              'referrer-policy: strict-origin-when-cross-origin' \
+              'permissions-policy: camera=(), microphone=(), geolocation=()'
+            do
+              printf '%s' "$headers" | tr -d '\r' | grep -qiF "$header" || {
+                echo "::error::/$path was served without '$header'"
+                printf '%s' "$headers"
+                exit 1
+              }
+            done
+          done
+
+      # server_tokens off. nginx otherwise names its exact version in every
+      # response, which tells a scanner which nginx advisories to try.
+      - name: The server does not advertise its version
+        run: |
+          server=$(curl -sS -D - -o /dev/null http://localhost:4321/ | tr -d '\r' | grep -i '^server:')
+          echo "$server"
+          printf '%s' "$server" | grep -qE '[0-9]+\.[0-9]+' && {
+            echo "::error::the Server header carries a version: $server"
+            exit 1
+          }
+          exit 0
+
       # The export service builds the files that go on a host, so the address
       # in them matters. The build-time guards cannot catch a wrong one — they
       # compare the canonical against the JSON-LD, which agree either way — so

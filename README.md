@@ -988,6 +988,30 @@ The build generates the Worker and static-asset config automatically. The bundle
 
 `pnpm build` uses the default Vercel adapter and writes the static site to `dist/client/`. You can host that folder on any static host — but the `/api/*` routes (contact form, newsletter) need a serverless/edge runtime, so on a purely static host you'd wire those forms up to an external service instead.
 
+### Security headers
+
+Every target sends the same five response headers, each from the file its
+platform reads:
+
+| Header | Value |
+|---|---|
+| `X-Content-Type-Options` | `nosniff` |
+| `X-Frame-Options` | `DENY` |
+| `Referrer-Policy` | `strict-origin-when-cross-origin` |
+| `Permissions-Policy` | `camera=(), microphone=(), geolocation=()` |
+| `Strict-Transport-Security` | `max-age=31536000; includeSubDomains` |
+
+Vercel reads `vercel.json`, Netlify reads `netlify.toml`, and Cloudflare reads
+`public/_headers` — which Netlify also reads, so those two are kept in step.
+The local preview container sends the first four from
+`nginx-security-headers.conf`; it omits HSTS, which a browser ignores over the
+plain HTTP it serves on localhost.
+
+Hosting `dist/client/` somewhere else means setting these headers there: they
+come from the platform's configuration, not from the built files. There is no
+`Content-Security-Policy` — a useful one depends on which analytics, embeds and
+fonts a site ends up using, so the theme does not guess.
+
 ---
 
 ## Browser Support
