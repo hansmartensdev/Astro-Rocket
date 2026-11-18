@@ -52,6 +52,10 @@ A few things are your responsibility rather than the theme's:
   every visitor. Never put a private key behind that prefix.
 - **Update your dependencies.** Most vulnerabilities in a site built on this
   theme will come from packages, not from the theme's own code.
+- **Install only the adapter you deploy with.** The theme ships Vercel's; the
+  README says how to add Netlify's or Cloudflare's. Each one brings a
+  platform's whole build toolchain, so installing the two you do not deploy to
+  roughly doubles the packages you are responsible for updating.
 - **Check your own additions.** Forms, API routes and third-party embeds you add
   are outside the theme's control and its testing.
 - **Put a rate limiter in front of the site.** `/api/contact` and

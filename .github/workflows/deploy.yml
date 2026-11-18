@@ -52,6 +52,35 @@ jobs:
           cache: 'pnpm'
       - run: pnpm install --frozen-lockfile
 
+      # Only the Vercel adapter is a dependency of the theme, so the other two
+      # targets install theirs first — the same extra step the README gives a
+      # site deploying to those platforms. This leg is therefore also the test
+      # that the documented command is the right one.
+      - name: Install the adapter for this target
+        if: matrix.target != 'vercel'
+        run: pnpm add -D @astrojs/${{ matrix.target }}
+
+      # The failure path of the same mechanism, on the one leg that has no
+      # extra adapter installed: asking for a target whose adapter is absent
+      # has to stop the build and name the package to install. Without this,
+      # a config that silently fell back to Vercel would deploy the wrong
+      # output to Netlify and every leg here would still be green.
+      - name: A missing adapter stops the build and says which one
+        if: matrix.target == 'vercel'
+        env:
+          DEPLOY_TARGET: netlify
+          SITE_URL: https://example.com
+        run: |
+          if pnpm run build > missing-adapter.log 2>&1; then
+            echo "::error::the build succeeded with no Netlify adapter installed"
+            exit 1
+          fi
+          grep -q '@astrojs/netlify' missing-adapter.log || {
+            echo "::error::the failure never named the package to install"
+            cat missing-adapter.log
+            exit 1
+          }
+
       - name: Build
         run: pnpm run build
         env:

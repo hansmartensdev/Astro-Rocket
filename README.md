@@ -943,6 +943,22 @@ The search button shows by default. Hide it per header instance:
 
 Configuration files included for major platforms.
 
+### Adapters
+
+Only the Vercel adapter is installed. Netlify and Cloudflare each need theirs
+added first:
+
+```bash
+pnpm add -D @astrojs/netlify      # for Netlify
+pnpm add -D @astrojs/cloudflare   # for Cloudflare
+```
+
+A site deploys to one platform, so installing all three would mean carrying two
+platforms' build tooling for nothing. It is not a small amount: the three
+adapters together bring 1,154 packages into a production install, and Vercel's
+alone brings 673. Building with a `DEPLOY_TARGET` whose adapter is missing
+fails with a message naming the package to install.
+
 ### Vercel (Recommended)
 
 ```bash
@@ -952,6 +968,7 @@ vercel
 ### Netlify
 
 ```bash
+pnpm add -D @astrojs/netlify
 netlify deploy --prod
 ```
 
@@ -960,6 +977,7 @@ netlify deploy --prod
 Astro's Cloudflare adapter (`@astrojs/cloudflare`) targets **Cloudflare Workers** (the platform behind today's "Workers & Pages"): the prerendered pages are served as static assets and the `/api/*` routes — the contact form and newsletter — run as the Worker. Build with the Cloudflare target, then deploy with Wrangler:
 
 ```bash
+pnpm add -D @astrojs/cloudflare
 DEPLOY_TARGET=cloudflare pnpm build
 npx wrangler deploy
 ```
