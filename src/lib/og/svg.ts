@@ -49,33 +49,85 @@ const TITLE_MAX_LINES = 3;
 const AVERAGE_GLYPH_WIDTH = 0.5;
 
 /**
- * Greedy word-wrap. Falls back to truncating with an ellipsis if the title
- * still doesn't fit in `maxLines`, and reports whether it had to.
+ * Chinese, Japanese and Korean characters (and full-width forms) are set on a
+ * square: one is as wide as two average Latin letters. These scripts also put
+ * no spaces between words, and a line may break between any two characters.
+ */
+const WIDE =
+  /[\u1100-\u115F\u2E80-\u303E\u3041-\u33FF\u3400-\u4DBF\u4E00-\u9FFF\uA960-\uA97F\uAC00-\uD7A3\uF900-\uFAFF\uFE30-\uFE4F\uFF00-\uFF60\uFFE0-\uFFE6]|[\u{20000}-\u{3FFFD}]/u;
+
+/** Punctuation that may not start a line in Chinese and Japanese: it stays with the character before it. */
+const NO_LINE_START = '，。、：；！？）」』】〉》”’…·';
+
+/** Width in average Latin letters: 1 for most characters, 2 for a wide one. */
+function measure(text: string): number {
+  let units = 0;
+  for (const ch of text) units += WIDE.test(ch) ? 2 : 1;
+  return units;
+}
+
+/**
+ * Split text where a line may break: at spaces, and between wide characters.
+ * Each piece records whether a space came before it, so a line put back
+ * together keeps the spaces the text had and adds none between characters.
+ */
+function breakPoints(text: string): { text: string; space: boolean }[] {
+  const pieces: { text: string; space: boolean }[] = [];
+  for (const word of text.trim().split(/\s+/).filter(Boolean)) {
+    let first = true;
+    let run = '';
+    const push = (piece: string) => {
+      pieces.push({ text: piece, space: first && pieces.length > 0 });
+      first = false;
+    };
+    for (const ch of word) {
+      if (NO_LINE_START.includes(ch)) {
+        if (run) run += ch;
+        else if (pieces.length > 0 && !first) pieces[pieces.length - 1].text += ch;
+        else run = ch;
+      } else if (WIDE.test(ch)) {
+        if (run) push(run);
+        run = '';
+        push(ch);
+      } else {
+        run += ch;
+      }
+    }
+    if (run) push(run);
+  }
+  return pieces;
+}
+
+/**
+ * Greedy wrap, measured in average Latin letters. Falls back to truncating
+ * with an ellipsis if the title still doesn't fit in `maxLines`, and reports
+ * whether it had to.
  */
 function wrapText(
   text: string,
   maxCharsPerLine: number,
   maxLines: number
 ): { lines: string[]; truncated: boolean } {
-  const words = text.trim().split(/\s+/);
+  const pieces = breakPoints(text);
   const lines: string[] = [];
   let line = '';
   let consumed = 0;
 
-  for (let i = 0; i < words.length; i++) {
-    const word = words[i];
+  for (let i = 0; i < pieces.length; i++) {
+    const { text: piece, space } = pieces[i];
     if (!line) {
-      line = word;
+      line = piece;
       consumed = i + 1;
       continue;
     }
-    if (line.length + 1 + word.length > maxCharsPerLine) {
+    const joined = line + (space ? ' ' : '') + piece;
+    if (measure(joined) > maxCharsPerLine) {
       lines.push(line);
       if (lines.length === maxLines) break;
-      line = word;
+      line = piece;
       consumed = i + 1;
     } else {
-      line += ' ' + word;
+      line = joined;
       consumed = i + 1;
     }
   }
@@ -83,9 +135,13 @@ function wrapText(
     lines.push(line);
   }
 
-  const truncated = lines.length === maxLines && consumed < words.length;
+  const truncated = lines.length === maxLines && consumed < pieces.length;
   if (truncated) {
-    lines[maxLines - 1] = lines[maxLines - 1].replace(/.{0,3}$/, '…');
+    const last = [...lines[maxLines - 1]];
+    // Make room for the ellipsis: three Latin letters' width.
+    let cut = 0;
+    while (last.length && cut < 3) cut += measure(last.pop()!);
+    lines[maxLines - 1] = last.join('') + '…';
   }
   return { lines, truncated };
 }
@@ -94,7 +150,7 @@ function wrapText(
  * Set the title as large as it will go without losing words: try each size in
  * turn, and settle for the smallest if even that has to cut the title short.
  */
-function layoutTitle(title: string): { lines: string[]; fontSize: number } {
+export function layoutTitle(title: string): { lines: string[]; fontSize: number } {
   let wrapped = { lines: [title], truncated: true };
   let fontSize = TITLE_SIZES[TITLE_SIZES.length - 1];
 
@@ -186,12 +242,17 @@ export function renderOgSvg({
 }
 
 /** Shorten to `max` characters, breaking at a word boundary where there is one. */
-function truncate(text: string, max: number): string {
-  if (text.length <= max) return text;
-  const clipped = text.slice(0, max - 1);
+/** Shorten text to `max` average Latin letters of width, ending in an ellipsis. */
+export function truncate(text: string, max: number): string {
+  if (measure(text) <= max) return text;
+  let clipped = '';
+  for (const ch of text) {
+    if (measure(clipped + ch) > max - 1) break;
+    clipped += ch;
+  }
   const lastSpace = clipped.lastIndexOf(' ');
-  const kept = lastSpace > max * 0.6 ? clipped.slice(0, lastSpace) : clipped;
-  return kept.replace(/[\s.,;:—-]+$/, '') + '…';
+  const kept = lastSpace >= 0 && measure(clipped.slice(0, lastSpace)) > max * 0.6 ? clipped.slice(0, lastSpace) : clipped;
+  return kept.replace(/[\s.,;:—\-，。、：；]+$/, '') + '…';
 }
 
 
