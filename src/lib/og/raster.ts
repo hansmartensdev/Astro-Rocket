@@ -8,6 +8,7 @@
  */
 import sharp from 'sharp';
 import { renderOgSvg, type OgImageOptions } from './svg.ts';
+import { warnIfScriptNeedsFont } from './fonts.ts';
 
 const WIDTH = 1200;
 const HEIGHT = 630;
@@ -21,6 +22,7 @@ const HEIGHT = 630;
  */
 export async function renderOgPng(options: OgImageOptions): Promise<Buffer> {
   await warnIfTextCannotRender();
+  warnIfScriptNeedsFont([options.title, options.subtitle]);
 
   const svg = renderOgSvg(options);
   const brandColor = options.brandColor;

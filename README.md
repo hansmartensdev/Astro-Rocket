@@ -459,6 +459,12 @@ src/content/projects/nl/studio-portfolio.mdx
 >
 > **Projects are localized the same way.** Drop translations under `src/content/projects/<locale>/` and the whole projects section is served at that locale's prefix — index (`/nl/projects`), each project (`/nl/projects/<slug>`), pagination (`/nl/projects/page/N`), and tag archives (`/nl/projects/tag/<tag>`), with every in-locale link, `hreflang`, and the `LanguageSwitcher` resolving inside that locale. Projects share one slug across locales: keep the same filename in each locale folder (e.g. `en/studio-portfolio.mdx` ↔ `nl/studio-portfolio.mdx`) and the theme pairs them automatically. As with the blog, you do **not** create `src/pages/<locale>/projects*` files yourself.
 
+### Chinese, Japanese and other scripts
+
+Pages in any script work as they are: the browser draws the letters with the visitor's fonts, tags keep their letters in the address (`/blog/tag/中文/`), and reading time counts characters for Chinese and Japanese.
+
+The share images are drawn when the site is built, with the fonts of the machine that builds it. Whether a host's build machine has Chinese, Japanese, Korean or Arabic letters is up to the host, and a letter it lacks comes out as a box. Put a font that has your script's letters in `src/fonts/`, as `.ttf`, `.otf`, `.ttc` or `.woff`, for example Noto Sans SC for Chinese, and the share images use it. This works on a Linux build machine, where fontconfig keeps its settings in `/etc/fonts`. The build log says so when a share image has letters outside the Latin alphabet and `src/fonts/` is empty.
+
 ### Performance
 
 The whole system is build-time. No client-side routing, no framework hydration for the `LanguageSwitcher` — just static HTML and a tiny vanilla-JS open/close handler for the dropdown panel. Verified zero output-size delta on the disabled path between 1.2.1 and 1.3.0.

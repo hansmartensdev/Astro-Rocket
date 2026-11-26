@@ -17,6 +17,7 @@ import {
   disagreementMessage,
 } from './scripts/site-url-agreement.mjs';
 import { SITE_NAME, THEME_COLOR } from './src/config/branding.ts';
+import { registerProjectFonts } from './src/lib/og/fonts.ts';
 
 /**
  * Load `.env` into `process.env` before anything below reads it.
@@ -48,6 +49,14 @@ for (const file of ['.env.local', '.env']) {
     // Not present. Nothing to load.
   }
 }
+
+/**
+ * Fonts in `src/fonts/` join the ones the share images and favicons are drawn
+ * with, for scripts the build machine may not have (src/lib/og/fonts.ts).
+ * This has to run before anything is drawn: fontconfig reads its settings
+ * once per process.
+ */
+registerProjectFonts();
 
 /**
  * Deploy-target adapter selection. Vercel is the default; set
