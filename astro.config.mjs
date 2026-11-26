@@ -413,6 +413,10 @@ export default defineConfig({
       PUBLIC_GOOGLE_MAPS_API_KEY: envField.string({ context: 'client', access: 'public', optional: true, default: '' }),
       PUBLIC_CONSENT_ENABLED: envField.boolean({ context: 'client', access: 'public', optional: true, default: false }),
       PUBLIC_PRIVACY_POLICY_URL: envField.string({ context: 'client', access: 'public', optional: true, default: '' }),
+      // The theme's own demo (astrorocket.dev) only: dark mode always, and no
+      // light/dark/system menu in the header. Unset on every other site, where
+      // the three modes work as documented.
+      DEMO_DARK_MODE: envField.boolean({ context: 'server', access: 'public', optional: true, default: false }),
     },
   },
 

@@ -10,6 +10,7 @@ import CursorTrail from '@/components/effects/CursorTrail.astro';
 import { createWebsiteSchema, createOrganizationSchema, createPersonSchema, createProfessionalServiceSchema } from '@/lib/schema';
 import type { Thing, WithContext } from 'schema-dts';
 import siteConfig from '@/config/site.config';
+import { DEMO_DARK_MODE } from 'astro:env/server';
 import { t, getLocaleFromPath } from '@/i18n';
 import { getRssUrl } from '@/lib/blog';
 
@@ -88,7 +89,13 @@ if (commentsConfig?.enabled) {
 ---
 
 <!doctype html>
-<html lang={locale} class="scroll-smooth dark" data-theme="blue" data-theme-mode="system">
+<html
+  lang={locale}
+  class="scroll-smooth dark"
+  data-theme="blue"
+  data-theme-mode={DEMO_DARK_MODE ? 'dark' : 'system'}
+  data-demo-dark={DEMO_DARK_MODE ? '' : undefined}
+>
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -154,6 +161,8 @@ if (commentsConfig?.enabled) {
         const VALID_MODES = ['system', 'light', 'dark'];
 
         function getMode() {
+          // The theme's demo (DEMO_DARK_MODE) is always dark.
+          if (document.documentElement.hasAttribute('data-demo-dark')) return 'dark';
           try {
             const stored = localStorage.getItem('theme');
             if (VALID_MODES.indexOf(stored) !== -1) return stored;
