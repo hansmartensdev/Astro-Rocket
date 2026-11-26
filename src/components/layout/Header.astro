@@ -34,6 +34,7 @@ import ThemeSelector from '@/components/layout/ThemeSelector.astro';
 import ThemeSelectorDropdown from '@/components/layout/ThemeSelectorDropdown.astro';
 import LanguageSwitcher from '@/components/layout/LanguageSwitcher.astro';
 import siteConfig from '@/config/site.config';
+import { DEMO_DARK_MODE } from 'astro:env/server';
 import { isEnabled as i18nIsEnabled, getLocaleFromPath, stripLocaleFromPath, t } from '@/i18n';
 
 export interface NavItem {
@@ -299,7 +300,8 @@ const buttonId = `${menuId}-button`;
               </div>
             )}
 
-            {showThemeToggle && (
+            {/* The theme's demo is dark only (DEMO_DARK_MODE): no mode menu. */}
+            {showThemeToggle && !DEMO_DARK_MODE && (
               <div class="flex">
                 <ThemeModeDropdown class={isFloating ? 'hdr-invert-text' : undefined} />
               </div>
